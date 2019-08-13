@@ -1,4 +1,4 @@
-package ngrams
+package stores
 
 import (
 	"testing"
@@ -7,12 +7,9 @@ import (
 )
 
 func TestNewMemoryStore(t *testing.T) {
-
-	// Test with in-memory store.
 	m := NewMemoryStore()
 	require.NotNil(t, m)
 	require.IsType(t, new(MemoryStore), m)
-
 }
 
 func TestAdd(t *testing.T) {

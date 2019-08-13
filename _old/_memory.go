@@ -1,8 +1,18 @@
 package ngrams
 
+/*
 import (
 	"sync"
 )
+
+// Grams is a map of Gram keyed on gram-key (eg. "to be"). This is
+// primarily used by the in-memory store, but can also be used to
+// structure data for other storage engines.
+type Grams map[string]Futures
+
+// Futures contains the future-sequenced ngrams and the number of times
+// they were indexed, keyed on gram-variation (eg. {"be or":3})
+type Futures map[string]int64
 
 // NewMemoryStore returns an in-memory ngram store. Ngrams added to the store
 // are not persisted when the service restarts.
@@ -51,3 +61,5 @@ func (s *MemoryStore) Delete(key string) error {
 
 	return nil
 }
+
+*/

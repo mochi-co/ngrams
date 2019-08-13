@@ -6,11 +6,14 @@ import (
 	"errors"
 	"flag"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/jamiealquiza/envy"
+
+	"github.com/mochi-co/trigrams-test"
 )
 
 // main is our entrypoint for the service.
@@ -33,14 +36,6 @@ func main() {
 	// packages; `envy`, which takes all the flags and transmutes them into env vars.
 	port := flag.Int("port", 8080, "port to serve webserver on")
 	envy.Parse("TRIGRAMS") // Expose environment variables as TRIGRAMS_PORT, etc.
-
-	// Start the service.
-	/*
-		err = service.Start()
-		if err != nil {
-			log.Fatal(err)
-		}
-	*/
 
 	log.Printf("Listening on localhost:%d\n", port)
 

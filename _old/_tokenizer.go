@@ -1,5 +1,6 @@
 package ngrams
 
+/*
 import (
 	"strings"
 )
@@ -65,17 +66,17 @@ var (
 func Tokenize(str string) []string {
 
 	r := []rune(str)
+	tokens := make([]string, 0, len(str))
 
 	// If we were only taking words, we could use strings.FieldsFunc to extract
 	// everything between the spaces. However, in order to preserve the expected
-	// grammar of the sentences, we need to take the punctation too as discrete
+	// grammar of the sentences, we need to also extract the punctation as discrete
 	// tokens. The easiest way to do this is range through the string as runes,
 	// extracting tokens as we go.
 
-	start := 0           // start indicates the starting index of a new token.
-	tokens := []string{} // tokens is the slice of tokens we're collecting.
-	var j int            // j is the index, and it's up a scope so we can append the final word.
-	var skipping bool    // skipping indicates that we're scanning over skippable runes.
+	var start int     // start indicates the starting index of a new token.
+	var j int         // j is the index, and it's up a scope so we can append the final word.
+	var skipping bool // skipping indicates that we're scanning over skippable runes.
 
 	for ; j < len(r); j++ {
 
@@ -152,5 +153,6 @@ func sanitize(str string) string {
 			}
 		}
 		return c
-	}, str)
+	}, strings.TrimSpace(str))
 }
+*/
