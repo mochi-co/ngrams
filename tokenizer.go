@@ -84,6 +84,7 @@ func Tokenize(str string) []string {
 		if isSkippableRune(r[j]) {
 			skipping = true
 			tokens = append(tokens, string(r[start:j]))
+			start = j // bring the start forward.
 			continue
 		}
 
@@ -100,20 +101,22 @@ func Tokenize(str string) []string {
 		// This allows us to preserve hyphenated words (eg. thirty-two, far-flung).
 		// We must also capture any trailing punctuation.
 		if isPunctuation(r[j]) && (j+1 < len(r) && r[j+1] == 32 || j == len(r)-1) {
-			tokens = append(tokens, string(r[start:j]))
-			start = j
+			token := string(r[0])
+			if j > 0 {
+				token = string(r[start:j])
+				tokens = append(tokens, token)
+				start = j
+			}
 		}
 	}
 
 	// If there are more characters left since the last split, take whatever is
 	// left and create the last token.
 	if j > start {
-		tokens = append(tokens, string(r[start:]))
+		if token := strings.TrimSpace(string(r[start:])); token != "" {
+			tokens = append(tokens, token)
+		}
 	}
-
-	//for _, v := range tokens {
-	//	log.Printf("`%s`\n", v)
-	//}
 
 	return tokens
 }

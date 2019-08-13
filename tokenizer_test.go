@@ -1,7 +1,6 @@
 package ngrams
 
 import (
-	"log"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -38,14 +37,9 @@ func TestTokenize(t *testing.T) {
 	require.Empty(t, tokens)
 	require.Equal(t, 0, len(tokens))
 
-	// ???
-	tokens = Tokenize(".. ")
-	for k, v := range tokens {
-		log.Println(k, v)
-	}
+	tokens = Tokenize(". ")
 	require.NotEmpty(t, tokens)
-	require.Equal(t, 2, len(tokens))
-
+	require.Equal(t, 1, len(tokens))
 }
 
 func TestIsSkippableRune(t *testing.T) {
@@ -94,7 +88,7 @@ func TestSanitize(t *testing.T) {
 
 	// In the "real world" you might do something a bit more comprehensive than this,
 	// maybe a test table (to allow for easier maintenance), but this is simple and serves a purpose.
-	str := "(«T[his 『is』 a “stri]n”g) \"int‘e{rspe’rsed wit}h „removable“ 「characters」.»"
+	str := "  («T[his 『is』 a “stri]n”g) \"int‘e{rspe’rsed wit}h „removable“ 「characters」.»  "
 	require.Equal(t, sanitize(str), "This is a string interspersed with removable characters.")
 
 }
