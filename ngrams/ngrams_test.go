@@ -22,7 +22,7 @@ func TestNewIndex(t *testing.T) {
 // Tests on struct methods take the name of TestStructMethod to keep them unique.
 func TestIndexParse(t *testing.T) {
 
-	b1 := "first second third fourth fifth sixth seventh"
+	b1 := "first second third fourth fifth sixth seventh 「characters」"
 
 	s := New(3, NewMemoryStore())
 	require.NotNil(t, s)

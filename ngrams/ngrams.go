@@ -63,13 +63,11 @@ func New(n int, store Store) *Index {
 // Parse parses a string of words into tokens and indexes the n-grams.
 func (i *Index) Parse(str string) error {
 
-	log.Println(str)
+	// Sanitize any invalid characters and convert the string into tokens.
+	str = sanitize(str)
+	tokens := Tokenize(str)
+
+	log.Println(tokens)
 
 	return nil
-}
-
-// sanitize
-func (i *Index) sanitize(r []rune) []rune {
-
-	return []rune{}
 }

@@ -1,6 +1,7 @@
 package ngrams
 
 import (
+	"log"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -28,6 +29,23 @@ func TestTokenize(t *testing.T) {
 
 	tokens = Tokenize("I am sick of Mr. Bingley, cried his wife.")
 	require.Equal(t, 12, len(tokens))
+
+	tokens = Tokenize("first")
+	require.NotEmpty(t, tokens)
+	require.Equal(t, 1, len(tokens))
+
+	tokens = Tokenize("")
+	require.Empty(t, tokens)
+	require.Equal(t, 0, len(tokens))
+
+	// ???
+	tokens = Tokenize(".. ")
+	for k, v := range tokens {
+		log.Println(k, v)
+	}
+	require.NotEmpty(t, tokens)
+	require.Equal(t, 2, len(tokens))
+
 }
 
 func TestIsSkippableRune(t *testing.T) {
@@ -54,6 +72,7 @@ func TestIsPunctuation(t *testing.T) {
 	require.Equal(t, true, isPunctuation(8253)) // ‽
 	require.Equal(t, true, isPunctuation(58))   // :
 	require.Equal(t, true, isPunctuation(59))   // ;
+	require.Equal(t, true, isPunctuation(38))   // &
 
 	require.Equal(t, true, isPunctuation(12290)) // 。 (cjk)
 	require.Equal(t, true, isPunctuation(12289)) //  、 (cjk)
@@ -69,4 +88,13 @@ func TestIsPunctuation(t *testing.T) {
 	require.Equal(t, false, isPunctuation(12288)) // space (cjk)
 	require.Equal(t, false, isPunctuation(45))    // -
 	require.Equal(t, false, isPunctuation(95))    // _
+}
+
+func TestSanitize(t *testing.T) {
+
+	// In the "real world" you might do something a bit more comprehensive than this,
+	// maybe a test table (to allow for easier maintenance), but this is simple and serves a purpose.
+	str := "(«T[his 『is』 a “stri]n”g) \"int‘e{rspe’rsed wit}h „removable“ 「characters」.»"
+	require.Equal(t, sanitize(str), "This is a string interspersed with removable characters.")
+
 }
