@@ -1,1 +1,1 @@
-trigrams-test
+trigrams
