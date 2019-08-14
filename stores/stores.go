@@ -23,7 +23,7 @@ type Store interface {
 	Delete(key string) error
 
 	// Any returns a random ngram from the store.
-	Any() (string, error)
+	Any() (string, Variations, error)
 }
 
 // Grams is a map of Variations keyed on gram-key (eg. "to be").

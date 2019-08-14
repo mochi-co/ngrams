@@ -144,7 +144,7 @@ func TestBabble(t *testing.T) {
 
 	i.Parse(string(d))
 
-	start, _ := i.Store.Any()
+	start, _, _ := i.Store.Any()
 	b := i.Babble(start, 60)
 	log.Println("##", b)
 }

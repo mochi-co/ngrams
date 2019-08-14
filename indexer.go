@@ -131,6 +131,9 @@ func (i *Index) Seek(key string) (ok bool, result *Result) {
 	// Use the tokenizer to split the key, and return the last token as
 	// part of the result to make next lookups more convenient.
 	parts := i.Tokenizer.Tokenize(key)
+	if len(parts) == 0 {
+		return
+	}
 	result = &Result{
 		Prefix: parts[len(parts)-1],
 		Next:   v,
@@ -146,29 +149,23 @@ func (i *Index) Babble(start string, n int) string {
 
 	o := i.Tokenizer.Tokenize(start)
 	for j := 0; j < n; j++ {
+		log.Println("SEEKING", start)
 		ok, r := i.Seek(start)
 		if !ok {
-
 			// Choose a new
-
 			log.Println("not found", start)
-
 			break
 		}
 
 		next := r.Next.NextWeightedRand()
 		start = r.Prefix + " " + next
-
-		log.Println("CHOSE", next, "|", start)
-
+		log.Println("#", next)
 		o = append(o, next)
 	}
 
-	log.Println(o)
+	b := i.Tokenizer.Format(o)
 
-	log.Println(i.Tokenizer.Formatter(o))
-
-	return ""
+	return b
 }
 
 // Result contains the result of a ngram lookup.

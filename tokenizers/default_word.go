@@ -1,6 +1,7 @@
 package tokenizers
 
 import (
+	"log"
 	"strings"
 )
 
@@ -10,6 +11,9 @@ type DefaultWord struct {
 
 	// skippable is a slice of whitespace-like runes which can be skipped.
 	skippable []rune
+
+	// stoppers is a slice of punctuation that indicate the end of a sentence.
+	stoppers []rune
 
 	// punctuation is a slice of punctuation which can be formed into tokens.
 	// This list is not all-encompassing, but takes the most common punctuation
@@ -30,6 +34,15 @@ func NewDefaultWordTokenizer() *DefaultWord {
 			13,    // \r return
 			32,    // \s space
 			12288, // space (cjk)
+		},
+		stoppers: []rune{
+			46,    // .
+			63,    // ?
+			33,    // !
+			8253,  // ‽
+			12290, // 。 (cjk)
+			65311, // ？ (cjk)
+			65281, // ！ (cjk)
 		},
 		punctuation: []rune{
 			46,    // .
@@ -96,9 +109,13 @@ func (tk *DefaultWord) Tokenize(str string) []string {
 
 		// If the rune is skippable, note that we're not tracking skippable
 		// runes, add any previous token to the slice, and continue.
-		if tk.isSkippableRune(r[j]) {
-			skipping = true
-			tokens = append(tokens, string(r[start:j]))
+		if runeInSlice(r[j], tk.skippable) {
+			log.Println("skipping", r[start:j], string(r[start:j]))
+			if !skipping {
+				tokens = append(tokens, string(r[start:j]))
+				skipping = true
+			}
+
 			start = j // bring the start forward.
 			continue
 		}
@@ -115,7 +132,7 @@ func (tk *DefaultWord) Tokenize(str string) []string {
 		// is whitespace, otherwise it will be treated as part of the previous token.
 		// This allows us to preserve hyphenated words (eg. thirty-two, far-flung).
 		// We must also capture any trailing punctuation.
-		if tk.isPunctuation(r[j]) && (j+1 < len(r) && r[j+1] == 32 || j == len(r)-1) {
+		if runeInSlice(r[j], tk.punctuation) && (j+1 < len(r) && r[j+1] == 32 || j == len(r)-1) {
 			token := string(r[0])
 			if j > 0 {
 				token = string(r[start:j])
@@ -136,43 +153,22 @@ func (tk *DefaultWord) Tokenize(str string) []string {
 	return tokens
 }
 
-// isPunctuation returns true if the rune is a variety of whitelisted punctuation.
-func (tk *DefaultWord) isPunctuation(c rune) bool {
-	for j := 0; j < len(tk.punctuation); j++ {
-		if tk.punctuation[j] == c {
-			return true
-		}
-	}
-
-	return false
-}
-
-// isSkippableRune returns true if the rune is a variety of whitespace or newline.
-func (tk *DefaultWord) isSkippableRune(c rune) bool {
-	for j := 0; j < len(tk.skippable); j++ {
-		if tk.skippable[j] == c {
-			return true
-		}
-	}
-
-	return false
-}
-
 // sanitize removes all unsupported characters from a string.
 func (tk *DefaultWord) sanitize(str string) string {
 	return strings.Map(func(c rune) rune {
-		for j := 0; j < len(tk.invalidChars); j++ {
-			if tk.invalidChars[j] == c {
-				return -1
-			}
+		if runeInSlice(c, tk.invalidChars) {
+			return -1
 		}
 		return c
 	}, strings.TrimSpace(str))
 }
 
-// Formatter joins a slice of tokens by the tokenizer rules.
-func (tk *DefaultWord) Formatter(tokens []string) string {
-
+// Format joins a slice of tokens by the tokenizer rules.
+// If we want to output the ngrams again, they're not always going to
+// go back together in the same manner they were consumed, especially if
+// the tokenizers are wildly different. A formatter allows us to ensure the
+// resulting text is appropriate.
+func (tk *DefaultWord) Format(tokens []string) string {
 	if len(tokens) == 0 {
 		return ""
 	}
@@ -182,11 +178,31 @@ func (tk *DefaultWord) Formatter(tokens []string) string {
 		if tokens[i] == "" { // Defensive coding. Continue on blank tokens.
 			continue
 		}
+		log.Printf("%d `%s`", i, tokens[i])
 
-		if i > 0 && !tk.isPunctuation([]rune(tokens[i])[0]) {
+		// If the token is punctuation, just append it and move on.
+		if runeInSlice([]rune(tokens[i])[0], tk.punctuation) {
+			o += tokens[i]
+			continue
+		}
+
+		// If the word is not the first, add a space beforehand.
+		if i > 0 {
 			o += " "
 		}
-		o += tokens[i]
+
+		// If the word follows a stopper, or is at the start of the sentence,
+		// then it should be capitalized.
+		if i == 0 || runeInSlice([]rune(tokens[i-1])[0], tk.stoppers) {
+			o += strings.ToUpper(string(tokens[i][0])) + string(tokens[i][1:])
+		} else {
+			o += tokens[i]
+		}
+
+		// If it's the last word, and it's not punctuation, add a . to the end.
+		if i == len(tokens)-1 && !runeInSlice([]rune(tokens[i])[0], tk.punctuation) {
+			o += "."
+		}
 	}
 
 	return o
