@@ -1,6 +1,9 @@
 package ngrams
 
 import (
+	"log"
+	"strings"
+
 	stores "github.com/mochi-co/trigrams-test/stores"
 	tk "github.com/mochi-co/trigrams-test/tokenizers"
 )
@@ -11,12 +14,8 @@ const (
 	defaultN int = 3
 )
 
-// Index indexes ngrams and provides meachnisms for ngram retrieval and
-// generation.
-type Index struct {
-
-	// N is the number of grams to store per key.
-	N int
+// Options contains parameters for the ngram indexer.
+type Options struct {
 
 	// Store contains the ngrams which have been indexed.
 	Store stores.Store
@@ -25,8 +24,12 @@ type Index struct {
 	Tokenizer tk.Tokenizer
 }
 
-// Options contains parameters for the ngram indexer.
-type Options struct {
+// Index indexes ngrams and provides meachnisms for ngram retrieval and
+// generation.
+type Index struct {
+
+	// N is the number of grams to store per key.
+	N int
 
 	// Store contains the ngrams which have been indexed.
 	Store stores.Store
@@ -63,9 +66,64 @@ func NewIndex(n int, o Options) *Index {
 // Parse parses a string into ngrams and adds them to the index.
 func (i *Index) Parse(str string) error {
 
+	// Tokenize the string using whichever tokenizer was selected.
+	tokens := i.Tokenizer.Tokenize(str)
+
+	// Iterate through the tokens creating n-grams of n length.
+	for j := 0; j < len(tokens); j++ {
+		k, f := i.extractNgram(j, tokens)
+		if k == "" {
+			break
+		}
+		i.Store.Add(k, f)
+		log.Println(k, f)
+	}
+
+	i.Store.(*stores.MemoryStore).Print()
+
+	return nil
 }
 
-// Next returns the next potential ngrams from the store.
-func (i *Index) Next(key string) stores.Potential {
+// extractNgram extracts the maximum possible length ngram from a slice of
+// tokens, starting at index and continuing until either n or len(tokens)
+// has been met.
+func (i *Index) extractNgram(j int, tokens []string) (key, future string) {
 
+	// Because we're using the n value for index lookups,
+	// it needs to start at 0 not 1.
+	n := i.N - 1
+
+	// An n-gram must have exactly as many tokens as (n), otherwise it would be
+	// called a sort-of-n-but-actually-sometimes-not-gram.
+	if j+n >= len(tokens) {
+		return
+	}
+
+	// Using whitespace as token joiners. In most cases whitespace is stripped
+	// in the tokenizer, so it will be unique. If you were using this in a
+	// different scenario (say, biological analysis) and you observed
+	// whitespace as a valid character, you could run into problems if there
+	// were competing entries: "a", "b", and "a b".
+	// That's a bit out of scope, but worth noting nonetheless.
+	if n > 0 {
+		key = strings.Join(tokens[j:j+n], " ")
+	} else { // Handle monograms in case anyone wants to do that (n=1, -1, n==0).
+		key = tokens[j]
+	}
+
+	future = tokens[j+n]
+
+	return
+
+}
+
+// Seek returns potential ngrams from the store matching the seed string.
+func (i *Index) Seek(seed string) Result {
+
+	return Result{}
+}
+
+// Result contains the result of a ngram lookup.
+type Result struct {
+	Next string
 }

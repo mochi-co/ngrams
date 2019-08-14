@@ -29,24 +29,46 @@ func TestNewIndex(t *testing.T) {
 	// ...
 }
 
-func TestIndexParse(t *testing.T) {
+func TestParse(t *testing.T) {
+
+	i := NewIndex(3, Options{})
+	i.Parse("to be or not to be that is the question")
 
 }
 
-/*
+func TestExtractNgram(t *testing.T) {
+	tokens := []string{"to", "be", "or", "not", "to", "be", ",", "that", "is", "the", "question", "."}
 
-// Tests on struct methods take the name of TestStructMethod to keep them unique.
-func TestIndexParse(t *testing.T) {
+	i := NewIndex(3, Options{})
+	key, future := i.extractNgram(0, tokens)
+	require.Equal(t, "to be", key)
+	require.Equal(t, "or", future)
 
-	b1 := "first second third fourth fifth sixth seventh 「characters」"
+	key, future = i.extractNgram(9, tokens)
+	require.Equal(t, "the question", key)
+	require.Equal(t, ".", future)
 
-	s := New(3, NewMemoryStore())
-	require.NotNil(t, s)
-	require.IsType(t, new(MemoryStore), s.Store)
-	require.Equal(t, s.N, 3)
+	key, future = i.extractNgram(10, tokens)
+	require.Equal(t, "", key)    // blank key for out of range.
+	require.Equal(t, "", future) // blank future for out of range.
 
-	err := s.Parse(b1)
-	require.NoError(t, err)
+	i = NewIndex(4, Options{})
+	key, future = i.extractNgram(0, tokens)
+	require.Equal(t, "to be or", key)
+	require.Equal(t, "not", future)
+
+	key, future = i.extractNgram(8, tokens)
+	require.Equal(t, "is the question", key)
+	require.Equal(t, ".", future)
+
+	i = NewIndex(2, Options{})
+	key, future = i.extractNgram(0, tokens)
+	require.Equal(t, "to", key)
+	require.Equal(t, "be", future)
+
+	i = NewIndex(1, Options{})
+	key, future = i.extractNgram(0, tokens)
+	require.Equal(t, "to", key)
+	require.Equal(t, "to", future) // I don't know why you'd use this for monograms but here we are.
 
 }
-*/
