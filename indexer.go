@@ -1,7 +1,6 @@
 package ngrams
 
 import (
-	"log"
 	"strings"
 
 	stores "github.com/mochi-co/trigrams-test/stores"
@@ -145,27 +144,30 @@ func (i *Index) Seek(key string) (ok bool, result *Result) {
 // Babble generates a random sequence of up to n ngrams. The future ngrams will be
 // selected based on their probability. The n value total will include discrete
 // punctuation depending on the tokenizer in use.
-func (i *Index) Babble(start string, n int) string {
+func (i *Index) Babble(start string, n int) (b string, err error) {
 
+	// Tokenize the starting string.
 	o := i.Tokenizer.Tokenize(start)
+
 	for j := 0; j < n; j++ {
-		log.Println("SEEKING", start)
 		ok, r := i.Seek(start)
 		if !ok {
-			// Choose a new
-			log.Println("not found", start)
-			break
+			k, _, err := i.Store.Any()
+			if err != nil {
+				return "", err
+			}
+			ok, r = i.Seek(k)
 		}
 
 		next := r.Next.NextWeightedRand()
 		start = r.Prefix + " " + next
-		log.Println("#", next)
-		o = append(o, next)
+		if next != "" {
+			o = append(o, next)
+		}
 	}
 
-	b := i.Tokenizer.Format(o)
-
-	return b
+	b = i.Tokenizer.Format(o)
+	return
 }
 
 // Result contains the result of a ngram lookup.

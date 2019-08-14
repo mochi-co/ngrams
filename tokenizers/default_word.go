@@ -1,7 +1,6 @@
 package tokenizers
 
 import (
-	"log"
 	"strings"
 )
 
@@ -61,18 +60,18 @@ func NewDefaultWordTokenizer() *DefaultWord {
 			65307, // ； (cjk)
 		},
 		invalidChars: []rune{
-			40,    // (
-			41,    // )
-			91,    // [
-			93,    // ]
-			123,   // {
-			125,   // }
-			34,    // "
-			38,    // &
-			8220,  // “
-			8221,  // ”
-			8216,  // ‘
-			8217,  // ’
+			40,   // (
+			41,   // )
+			91,   // [
+			93,   // ]
+			123,  // {
+			125,  // }
+			34,   // "
+			38,   // &
+			8220, // “
+			8221, // ”
+			8216, // ‘
+			//8217,  // ’
 			171,   // «
 			187,   // »
 			8222,  // „
@@ -177,7 +176,6 @@ func (tk *DefaultWord) Format(tokens []string) string {
 		if tokens[i] == "" { // Defensive coding. Continue on blank tokens.
 			continue
 		}
-		log.Printf("%d `%s`", i, tokens[i])
 
 		// If the token is punctuation, just append it and move on.
 		if runeInSlice([]rune(tokens[i])[0], tk.punctuation) {
@@ -192,7 +190,7 @@ func (tk *DefaultWord) Format(tokens []string) string {
 
 		// If the word follows a stopper, or is at the start of the sentence,
 		// then it should be capitalized.
-		if i == 0 || runeInSlice([]rune(tokens[i-1])[0], tk.stoppers) {
+		if i == 0 || (len(tokens[i]) > 1 && runeInSlice([]rune(tokens[i-1])[0], tk.stoppers)) {
 			o += strings.ToUpper(string(tokens[i][0])) + string(tokens[i][1:])
 		} else {
 			o += tokens[i]

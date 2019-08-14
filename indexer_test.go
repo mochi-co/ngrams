@@ -145,6 +145,24 @@ func TestBabble(t *testing.T) {
 	i.Parse(string(d))
 
 	start, _, _ := i.Store.Any()
-	b := i.Babble(start, 60)
+	b, err := i.Babble(start, 200)
+	require.NoError(t, err)
+	log.Println("##", b)
+}
+
+func TestShortBabble(t *testing.T) {
+
+	i := NewIndex(3, Options{})
+	i.Parse("to be or not to be, that is the question.")
+	i.Parse("be or not to be something, what is the question?")
+	i.Parse("what can we be, or not be, if we ask the question of ourselves.")
+	//i.Parse("Mr. Bingley was good-looking and gentlemanlike; he had a pleasant countenance, and easy, unaffected manners.")
+	//	i.Parse("To think it more than commonly anxious to get round to the preference of one, and offended by the other as politely and more cheerfully.")
+	//	i.Parse("Their visit afforded was produced by the lady with whom she almost looked up to the stables. They were to set out with such a woman.")
+
+	//i.Store.(*stores.MemoryStore).Print()
+
+	b, err := i.Babble("be something", 200)
+	require.NoError(t, err)
 	log.Println("##", b)
 }
