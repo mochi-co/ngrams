@@ -110,13 +110,12 @@ func (tk *DefaultWord) Tokenize(str string) []string {
 		// If the rune is skippable, note that we're not tracking skippable
 		// runes, add any previous token to the slice, and continue.
 		if runeInSlice(r[j], tk.skippable) {
-			log.Println("skipping", r[start:j], string(r[start:j]))
 			if !skipping {
 				tokens = append(tokens, string(r[start:j]))
 				skipping = true
 			}
 
-			start = j // bring the start forward.
+			start = j + 1 // bring the start forward.
 			continue
 		}
 
@@ -132,7 +131,7 @@ func (tk *DefaultWord) Tokenize(str string) []string {
 		// is whitespace, otherwise it will be treated as part of the previous token.
 		// This allows us to preserve hyphenated words (eg. thirty-two, far-flung).
 		// We must also capture any trailing punctuation.
-		if runeInSlice(r[j], tk.punctuation) && (j+1 < len(r) && r[j+1] == 32 || j == len(r)-1) {
+		if runeInSlice(r[j], tk.punctuation) && (j+1 < len(r) && runeInSlice(r[j+1], tk.skippable) || j == len(r)-1) {
 			token := string(r[0])
 			if j > 0 {
 				token = string(r[start:j])
