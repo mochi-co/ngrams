@@ -47,10 +47,6 @@ func (s *MemoryStore) Add(key, future string) error {
 	return nil
 }
 
-func (s *MemoryStore) Print() {
-	log.Printf("%+v\n", s.internal)
-}
-
 // Get gets an ngram variation from the store.
 func (s *MemoryStore) Get(key string) (ok bool, v Variations) {
 	s.Lock()
@@ -69,4 +65,25 @@ func (s *MemoryStore) Delete(key string) error {
 	delete(s.internal, key)
 
 	return nil
+}
+
+// Any returns a random ngram from the store.
+func (s *MemoryStore) Any() (k string, v Variations, err error) {
+	s.RLock()
+	defer s.RUnlock()
+
+	// Maps are unordered, so far these purposes we can just take
+	// whatever is the first in the range. In a more sensitive
+	// environment it would be better to use a randomizer.
+	for k, v = range s.internal {
+		return
+	}
+
+	return
+}
+
+func (s *MemoryStore) Print() {
+	for k := range s.internal {
+		log.Printf("%+v\n", k)
+	}
 }

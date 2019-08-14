@@ -76,6 +76,7 @@ func NewDefaultWordTokenizer() *DefaultWord {
 func (tk *DefaultWord) Tokenize(str string) []string {
 
 	// Sanitize the input string.
+	//str = strings.ToLower(str)
 	str = tk.sanitize(str)
 
 	r := []rune(str)
@@ -167,4 +168,27 @@ func (tk *DefaultWord) sanitize(str string) string {
 		}
 		return c
 	}, strings.TrimSpace(str))
+}
+
+// Formatter joins a slice of tokens by the tokenizer rules.
+func (tk *DefaultWord) Formatter(tokens []string) string {
+
+	if len(tokens) == 0 {
+		return ""
+	}
+
+	var o string
+	for i := 0; i < len(tokens); i++ {
+		if tokens[i] == "" { // Defensive coding. Continue on blank tokens.
+			continue
+		}
+
+		if i > 0 && !tk.isPunctuation([]rune(tokens[i])[0]) {
+			o += " "
+		}
+		o += tokens[i]
+	}
+
+	return o
+
 }

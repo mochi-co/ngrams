@@ -1,5 +1,10 @@
 package stores
 
+import (
+	"math/rand"
+	"time"
+)
+
 // Store is a data storage mechanism for ngrams.
 type Store interface {
 
@@ -16,6 +21,9 @@ type Store interface {
 
 	// Delete removes an ngram key and all variations from the index.
 	Delete(key string) error
+
+	// Any returns a random ngram from the store.
+	Any() (string, error)
 }
 
 // Grams is a map of Variations keyed on gram-key (eg. "to be").
@@ -28,3 +36,30 @@ type Grams map[string]Variations
 // Variations contains the future-sequenced ngrams and the number of times
 // they were indexed, keyed on gram-variation (eg. {"be or":3})
 type Variations map[string]int64
+
+// NextWeightedRand returns a random variation, probability-weighted by the
+// number of times it was indexed.
+// Using a linear scan ala https://blog.bruce-hill.com/a-faster-weighted-random-choice
+func (v *Variations) NextWeightedRand() string {
+	rand.Seed(time.Now().UnixNano())
+
+	// Get a sum total of the probabities of all variations.
+	var total int64
+	for _, i := range *v {
+		total += i
+	}
+
+	// Pick a random int between 0 and the total sum.
+	r := rand.Int63n(total)
+
+	// Range through the possible variations and subtract the probability
+	// weight from the random number. If r goes below zero, select the key.
+	for k, i := range *v {
+		r -= i
+		if r < 0 {
+			return k
+		}
+	}
+
+	return "" // This should be impossible. In theory...
+}

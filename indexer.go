@@ -76,10 +76,9 @@ func (i *Index) Parse(str string) error {
 			break
 		}
 		i.Store.Add(k, f)
-		log.Println(k, f)
 	}
 
-	i.Store.(*stores.MemoryStore).Print()
+	//i.Store.(*stores.MemoryStore).Print()
 
 	return nil
 }
@@ -94,8 +93,9 @@ func (i *Index) extractNgram(j int, tokens []string) (key, future string) {
 	n := i.N - 1
 
 	// An n-gram must have exactly as many tokens as (n), otherwise it would be
-	// called a sort-of-n-but-actually-sometimes-not-gram.
-	if j+n >= len(tokens) {
+	// called a sort-of-n-but-actually-sometimes-not-gram. But we can allow
+	// a trigram with a blank future.
+	if j+n > len(tokens) {
 		return
 	}
 
@@ -111,19 +111,74 @@ func (i *Index) extractNgram(j int, tokens []string) (key, future string) {
 		key = tokens[j]
 	}
 
-	future = tokens[j+n]
+	// Only add a future if there's one more token to support it.
+	if j+n < len(tokens) {
+		future = tokens[j+n]
+	}
 
 	return
 
 }
 
 // Seek returns potential ngrams from the store matching the seed string.
-func (i *Index) Seek(seed string) Result {
+func (i *Index) Seek(key string) (ok bool, result *Result) {
+	var v stores.Variations
+	ok, v = i.Store.Get(key)
+	if !ok {
+		return
+	}
 
-	return Result{}
+	// Use the tokenizer to split the key, and return the last token as
+	// part of the result to make next lookups more convenient.
+	parts := i.Tokenizer.Tokenize(key)
+	result = &Result{
+		Prefix: parts[len(parts)-1],
+		Next:   v,
+	}
+
+	return
+}
+
+// Babble generates a random sequence of up to n ngrams. The future ngrams will be
+// selected based on their probability. The n value total will include discrete
+// punctuation depending on the tokenizer in use.
+func (i *Index) Babble(start string, n int) string {
+
+	o := i.Tokenizer.Tokenize(start)
+	for j := 0; j < n; j++ {
+		ok, r := i.Seek(start)
+		if !ok {
+
+			// Choose a new
+
+			log.Println("not found", start)
+
+			break
+		}
+
+		next := r.Next.NextWeightedRand()
+		start = r.Prefix + " " + next
+
+		log.Println("CHOSE", next, "|", start)
+
+		o = append(o, next)
+	}
+
+	log.Println(o)
+
+	log.Println(i.Tokenizer.Formatter(o))
+
+	return ""
 }
 
 // Result contains the result of a ngram lookup.
 type Result struct {
-	Next string
+
+	// Prefix is the last token of the key that was matched. It is added
+	// to a key from the variations to make the next key, eg. Prefix+" "+VKey.
+	Prefix string
+
+	// Next contains the future variations of the ngram and the number of times
+	// they were indexed (probabilty score).
+	Next stores.Variations
 }

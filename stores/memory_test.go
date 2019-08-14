@@ -42,9 +42,23 @@ func TestGet(t *testing.T) {
 	ok, v := m.Get("to be")
 	require.Equal(t, true, ok)
 	require.Equal(t, f, v)
+}
 
+func TestAny(t *testing.T) {
+	m := NewMemoryStore()
+	require.NotNil(t, m)
+
+	err := m.Add("to be", "or")
+	require.NoError(t, err)
+	err = m.Add("be or", "not")
+	require.NoError(t, err)
+
+	k, v, _ := m.Any()
+	require.NotEmpty(t, k)
+	require.NotEmpty(t, v)
+	require.Equal(t, true, k == "to be" || k == "be or")
 }
 
 func TestRemove(t *testing.T) {
-
+	// ...
 }
