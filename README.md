@@ -7,7 +7,21 @@
 `Ngrams` is a simple N-gram index capable of learning from a corpus of data and generating a random output in the same style. The index and tokenization systems are implemented as interfaces, so you can roll your own solution.
 
 ## Quick Start
-You can test `ngrams` by running the small REST webserver in `cmd/trigrams.go`. The trigrams example uses the `tokenizers.DefaultWord` tokenizer, which will parse and format ngrams based on general latin-alphabet rules. The webserver will serve two endpoints:
+You can test `ngrams` by running the small REST webserver in `cmd/trigrams.go`. 
+```
+$ git clone https://github.com/mochi-co/ngrams.git
+$ cd ngrams
+```
+```
+$ go test -cover ./...
+```
+```
+$ go build cmd/trigrams.go
+or
+$ go run cmd/trigrams.go
+```
+
+The webserver will serve two endpoints:
 ##### POST `localhost:8080/learn` 
 Indexes a plain-text body of data. Training texts can be found in `training`.
 ```
@@ -37,7 +51,7 @@ $ curl localhost:8080/generate?limit=10
 ```
 
 ## Basic Usage
-An example of usage as a library can be found in `cmd/trigrams.go`. 
+An example of usage as a library can be found in `cmd/trigrams.go`. The trigrams example uses the `tokenizers.DefaultWord` tokenizer, which will parse and format ngrams based on general latin-alphabet rules. 
 
 ```go
 import "github.com/mochi-co/ngrams"
