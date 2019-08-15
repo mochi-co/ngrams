@@ -3,8 +3,8 @@ package ngrams
 import (
 	"strings"
 
-	stores "github.com/mochi-co/trigrams-test/stores"
-	tk "github.com/mochi-co/trigrams-test/tokenizers"
+	stores "github.com/mochi-co/ngrams/stores"
+	tk "github.com/mochi-co/ngrams/tokenizers"
 )
 
 const (
@@ -40,26 +40,40 @@ type Index struct {
 // NewIndex returns a pointer to an Ngrams Index. It can be initialized
 // with a custom store and tokenizer, otherwise the default in-memory store
 // and latin word tokenizer will be used.
-func NewIndex(n int, o Options) *Index {
+func NewIndex(n int, o *Options) *Index {
+
 	i := &Index{
 		N:         n,
-		Store:     o.Store,
-		Tokenizer: o.Tokenizer,
+		Store:     stores.NewMemoryStore(),
+		Tokenizer: tk.NewDefaultWordTokenizer(),
 	}
 
+	// Ensure n is never 0.
 	if i.N == 0 {
 		i.N = defaultN
 	}
 
-	if i.Store == nil {
-		i.Store = stores.NewMemoryStore()
-	}
-
-	if i.Tokenizer == nil {
-		i.Tokenizer = tk.NewDefaultWordTokenizer()
+	// Use custom options if available.
+	if o != nil {
+		if o.Store != nil {
+			i.Store = o.Store
+		}
+		if o.Tokenizer != nil {
+			i.Tokenizer = o.Tokenizer
+		}
 	}
 
 	return i
+}
+
+// Close attempts to gracefully close and shutdown the index and any stores.
+func (i *Index) Close() error {
+	err := i.Store.Close()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Parse parses a string into ngrams and adds them to the index.
@@ -92,8 +106,7 @@ func (i *Index) extractNgram(j int, tokens []string) (key, future string) {
 	n := i.N - 1
 
 	// An n-gram must have exactly as many tokens as (n), otherwise it would be
-	// called a sort-of-n-but-actually-sometimes-not-gram. But we can allow
-	// a trigram with a blank future.
+	// called a sort-of-n-but-actually-sometimes-not-gram.
 	if j+n > len(tokens) {
 		return
 	}
@@ -133,6 +146,7 @@ func (i *Index) Seek(key string) (ok bool, result *Result) {
 	if len(parts) == 0 {
 		return
 	}
+
 	result = &Result{
 		Prefix: parts[len(parts)-1],
 		Next:   v,
@@ -146,12 +160,17 @@ func (i *Index) Seek(key string) (ok bool, result *Result) {
 // punctuation depending on the tokenizer in use.
 func (i *Index) Babble(start string, n int) (b string, err error) {
 
-	// Tokenize the starting string.
+	// We need the start string as the first tokens in the selected output,
+	// otherwise they'll be skipped.
 	o := i.Tokenizer.Tokenize(start)
 
+	// For however many tokens we want to use, we'll range through looking
+	// for matching ngram keys.
 	for j := 0; j < n; j++ {
 		ok, r := i.Seek(start)
 		if !ok {
+
+			// If nothing was found for the ngram, pick a new ngram at random.
 			k, _, err := i.Store.Any()
 			if err != nil {
 				return "", err
@@ -159,6 +178,7 @@ func (i *Index) Babble(start string, n int) (b string, err error) {
 			ok, r = i.Seek(k)
 		}
 
+		// Get the next ngram using a weighted random selection from the variations.
 		next := r.Next.NextWeightedRand()
 		start = r.Prefix + " " + next
 		if next != "" {
@@ -166,6 +186,7 @@ func (i *Index) Babble(start string, n int) (b string, err error) {
 		}
 	}
 
+	// Output the string using the token formatter for the in-use tokenizer.
 	b = i.Tokenizer.Format(o)
 	return
 }

@@ -15,14 +15,14 @@ import (
 func TestNewIndex(t *testing.T) {
 
 	// Force all defaults
-	i := NewIndex(0, Options{})
+	i := NewIndex(0, nil)
 	require.NotNil(t, i)
 	require.IsType(t, new(stores.MemoryStore), i.Store)
 	require.IsType(t, new(tk.DefaultWord), i.Tokenizer)
 	require.Equal(t, i.N, defaultN)
 
 	// Custom n value
-	i = NewIndex(2, Options{})
+	i = NewIndex(2, nil)
 	require.Equal(t, i.N, 2)
 
 	// Custom Tokenizer
@@ -33,14 +33,14 @@ func TestNewIndex(t *testing.T) {
 }
 
 func TestParse(t *testing.T) {
-	i := NewIndex(3, Options{})
+	i := NewIndex(3, nil)
 	i.Parse("to be or not to be that is the question")
 }
 
 func TestExtractNgram(t *testing.T) {
 	tokens := []string{"to", "be", "or", "not", "to", "be", ",", "that", "is", "the", "question", "."}
 
-	i := NewIndex(3, Options{})
+	i := NewIndex(3, nil)
 	key, future := i.extractNgram(0, tokens)
 	require.Equal(t, "to be", key)
 	require.Equal(t, "or", future)
@@ -49,7 +49,7 @@ func TestExtractNgram(t *testing.T) {
 	require.Equal(t, "the question", key)
 	require.Equal(t, ".", future)
 
-	i = NewIndex(3, Options{})
+	i = NewIndex(3, nil)
 	key, future = i.extractNgram(0, tokens)
 	require.Equal(t, "to be", key)
 	require.Equal(t, "or", future)
@@ -62,7 +62,7 @@ func TestExtractNgram(t *testing.T) {
 	require.Equal(t, "", key)    // blank key for out of range.
 	require.Equal(t, "", future) // blank future for out of range.
 
-	i = NewIndex(4, Options{})
+	i = NewIndex(4, nil)
 	key, future = i.extractNgram(0, tokens)
 	require.Equal(t, "to be or", key)
 	require.Equal(t, "not", future)
@@ -71,12 +71,12 @@ func TestExtractNgram(t *testing.T) {
 	require.Equal(t, "is the question", key)
 	require.Equal(t, ".", future)
 
-	i = NewIndex(2, Options{})
+	i = NewIndex(2, nil)
 	key, future = i.extractNgram(0, tokens)
 	require.Equal(t, "to", key)
 	require.Equal(t, "be", future)
 
-	i = NewIndex(1, Options{})
+	i = NewIndex(1, nil)
 	key, future = i.extractNgram(0, tokens)
 	require.Equal(t, "to", key)
 	require.Equal(t, "to", future) // I don't know why you'd use this for monograms but here we are.
@@ -84,7 +84,7 @@ func TestExtractNgram(t *testing.T) {
 }
 
 func TestSeek(t *testing.T) {
-	i := NewIndex(2, Options{})
+	i := NewIndex(2, nil)
 	i.Parse("to be or not to be that is the question")
 
 	ok, result := i.Seek("to")
@@ -92,7 +92,7 @@ func TestSeek(t *testing.T) {
 	require.Equal(t, "to", result.Prefix) // this is unusued with bigrams
 	require.Equal(t, stores.Variations{"be": 2}, result.Next)
 
-	i = NewIndex(3, Options{})
+	i = NewIndex(3, nil)
 	i.Parse("to be or not to be that is the question")
 
 	ok, result = i.Seek("to be")
@@ -105,7 +105,7 @@ func TestSeek(t *testing.T) {
 	require.Equal(t, "that", result.Prefix)
 	require.Equal(t, stores.Variations{"is": 1}, result.Next)
 
-	i = NewIndex(4, Options{})
+	i = NewIndex(4, nil)
 	i.Parse("to be or not to be that is the question")
 
 	ok, result = i.Seek("to be or")
@@ -115,24 +115,8 @@ func TestSeek(t *testing.T) {
 }
 
 func TestBabble(t *testing.T) {
-	i := NewIndex(3, Options{})
+	i := NewIndex(3, nil)
 
-	/*
-		i := NewIndex(3, Options{})
-		i.Parse("to be or not to be, that is the question.")
-		i.Parse("be or not to be something, what is the question?")
-		i.Parse("what can we be, or not be, if we ask the question of ourselves.")
-		//i.Parse("Mr. Bingley was good-looking and gentlemanlike; he had a pleasant countenance, and easy, unaffected manners.")
-		//	i.Parse("To think it more than commonly anxious to get round to the preference of one, and offended by the other as politely and more cheerfully.")
-		//	i.Parse("Their visit afforded was produced by the lady with whom she almost looked up to the stables. They were to set out with such a woman.")
-
-		//i.Store.(*stores.MemoryStore).Print()
-
-		b := i.Babble("to be", 20)
-		log.Println("##", b)
-	*/
-
-	// Read Austen
 	file, err := os.Open("training/pride_prejudice.txt")
 	if err != nil {
 		require.NoError(t, err)
@@ -152,7 +136,7 @@ func TestBabble(t *testing.T) {
 
 func TestShortBabble(t *testing.T) {
 
-	i := NewIndex(3, Options{})
+	i := NewIndex(3, nil)
 	i.Parse("to be or not to be, that is the question.")
 	i.Parse("be or not to be something, what is the question?")
 	i.Parse("what can we be, or not be, if we ask the question of ourselves.")

@@ -1,7 +1,6 @@
 package stores
 
 import (
-	"log"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -13,7 +12,7 @@ func TestNewMemoryStore(t *testing.T) {
 	require.IsType(t, new(MemoryStore), m)
 }
 
-func TestAdd(t *testing.T) {
+func TestMemoryAdd(t *testing.T) {
 	m := NewMemoryStore()
 	require.NotNil(t, m)
 
@@ -23,10 +22,21 @@ func TestAdd(t *testing.T) {
 	require.NotNil(t, m.(*MemoryStore).internal["to be"]["or"])
 	require.Equal(t, int64(1), m.(*MemoryStore).internal["to be"]["or"])
 
-	log.Printf("%#v\n", m.(*MemoryStore).internal)
+	// new variation
+	err = m.Add("to be", "can")
+	require.NoError(t, err)
+	require.Equal(t, int64(1), m.(*MemoryStore).internal["to be"]["or"])
+	require.Equal(t, int64(1), m.(*MemoryStore).internal["to be"]["can"])
+
+	// increment existing
+	err = m.Add("to be", "or")
+	require.NoError(t, err)
+	require.Equal(t, int64(2), m.(*MemoryStore).internal["to be"]["or"])
+	require.Equal(t, int64(1), m.(*MemoryStore).internal["to be"]["can"])
+
 }
 
-func TestGet(t *testing.T) {
+func TestMemoryGet(t *testing.T) {
 	f := Variations{
 		"or": 3,
 		"is": 2,
@@ -44,7 +54,7 @@ func TestGet(t *testing.T) {
 	require.Equal(t, f, v)
 }
 
-func TestAny(t *testing.T) {
+func TestMemoryAny(t *testing.T) {
 	m := NewMemoryStore()
 	require.NotNil(t, m)
 
@@ -53,12 +63,39 @@ func TestAny(t *testing.T) {
 	err = m.Add("be or", "not")
 	require.NoError(t, err)
 
-	k, v, _ := m.Any()
+	k, v, err := m.Any()
+	require.NoError(t, err)
 	require.NotEmpty(t, k)
 	require.NotEmpty(t, v)
 	require.Equal(t, true, k == "to be" || k == "be or")
 }
 
-func TestRemove(t *testing.T) {
-	// ...
+func TestMemoryRemove(t *testing.T) {
+	m := &MemoryStore{
+		internal: Grams{
+			"to be": Variations{
+				"or": 3,
+				"is": 2,
+				"a":  1,
+			},
+			"be or": Variations{
+				"thing": 1,
+			},
+		},
+	}
+
+	require.NotNil(t, m.internal["to be"])
+	require.NotNil(t, m.internal["be or"])
+
+	err := m.Delete("to be")
+	require.NoError(t, err)
+
+	require.Nil(t, m.internal["to be"])
+	require.NotNil(t, m.internal["be or"])
+}
+
+func TestMemoryClose(t *testing.T) {
+	m := NewMemoryStore()
+	err := m.Close()
+	require.NoError(t, err)
 }

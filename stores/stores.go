@@ -8,6 +8,11 @@ import (
 // Store is a data storage mechanism for ngrams.
 type Store interface {
 
+	// Connect would be used to setup any connections to an external
+	// data store. However, since there are no implementations of that
+	// yet, it's noted here as a stub.
+	// Connect(options interface{}) error
+
 	// Add adds a new ngram and key-variation pair to the index. It
 	// should take the key, which will be used to index the gram, and
 	// the future, which is a slice of consequent gram tokens.
@@ -24,6 +29,9 @@ type Store interface {
 
 	// Any returns a random ngram from the store.
 	Any() (string, Variations, error)
+
+	// Close is used to gracefully shutdown any connections.
+	Close() error
 }
 
 // Grams is a map of Variations keyed on gram-key (eg. "to be").
@@ -54,12 +62,14 @@ func (v *Variations) NextWeightedRand() string {
 
 	// Range through the possible variations and subtract the probability
 	// weight from the random number. If r goes below zero, select the key.
-	for k, i := range *v {
+	var k string
+	var i int64
+	for k, i = range *v {
 		r -= i
 		if r < 0 {
-			return k
+			break
 		}
 	}
 
-	return "" // This should be impossible. In theory...
+	return k
 }

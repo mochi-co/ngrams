@@ -1,7 +1,6 @@
 package stores
 
 import (
-	"log"
 	"sync"
 )
 
@@ -76,14 +75,14 @@ func (s *MemoryStore) Any() (k string, v Variations, err error) {
 	// whatever is the first in the range. In a more sensitive
 	// environment it would be better to use a randomizer.
 	for k, v = range s.internal {
-		return
+		break
 	}
 
 	return
 }
 
-func (s *MemoryStore) Print() {
-	for k := range s.internal {
-		log.Printf("%+v\n", k)
-	}
+// Close gracefully disconnects the store. Because this is just in-memory,
+// it will do nothing and return no errors.
+func (s *MemoryStore) Close() error {
+	return nil
 }

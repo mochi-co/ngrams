@@ -1,7 +1,6 @@
 package stores
 
 import (
-	"log"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -25,12 +24,10 @@ func TestVariationsNextWeightedRand(t *testing.T) {
 		require.NotEmpty(t, next)
 		results[next] += 1
 	}
-	log.Println(results)
-	log.Println(v)
 
-	// Fuzzy distribution check. Tolerance +/- 2%
-	require.Equal(t, true, (results["or"] > 1900 && results["or"] < 2100))
-	require.Equal(t, true, (results["to"] > 2900 && results["to"] < 3100))
-	require.Equal(t, true, (results["be"] > 4900 && results["be"] < 5100))
+	// Fuzzy distribution check. Tolerance +/- 4%
+	require.Equal(t, true, (results["or"] > 1800 && results["or"] < 2200))
+	require.Equal(t, true, (results["to"] > 2800 && results["to"] < 3200))
+	require.Equal(t, true, (results["be"] > 4800 && results["be"] < 5200))
 
 }
