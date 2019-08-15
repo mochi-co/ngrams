@@ -77,7 +77,7 @@ New tokenizers can be created by satisfying the `tokenizers.Tokenizer` interface
 ### Stores
 By default, the index uses an in-memory store, `stores.MemoryStore`. This is a basic memory store which stores the ngrams as-is. It's great for small examples, but if you were indexing millions of tokens it would be good to think about compression or aliasing. 
 
-New stores can be created by satisfying the `stores.Store` inteface.
+New stores can be created by satisfying the `stores.Store` interface.
 
 
 ## Contributions
