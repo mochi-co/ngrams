@@ -120,7 +120,7 @@ func TestSeek(t *testing.T) {
 func TestBabble(t *testing.T) {
 	i := NewIndex(3, nil)
 
-	file, err := os.Open("training/pride_prejudice.txt")
+	file, err := os.Open("training/pride-prejudice.txt")
 	if err != nil {
 		require.NoError(t, err)
 	}
