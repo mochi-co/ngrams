@@ -75,6 +75,10 @@ func (s *MemoryStore) Any() (k string, v Variations, err error) {
 	// whatever is the first in the range. In a more sensitive
 	// environment it would be better to use a randomizer.
 	for k, v = range s.internal {
+
+		// If you wanted to get a bit clever here, you could implement
+		// some kind of check that only selected starter ngrams, but this
+		// would require storing metadata with the ngram.
 		break
 	}
 

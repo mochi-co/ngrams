@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"flag"
 	"io/ioutil"
@@ -88,20 +89,75 @@ func main() {
 func learnHandler(w http.ResponseWriter, r *http.Request) {
 	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Println("Error:", err)
-		http.Error(w, http.StatusText(500), 500)
+		errHandler(w, 500, err)
 	}
 
 	if len(b) == 0 {
-		http.Error(w, http.StatusText(400), 400)
+		errHandler(w, 400, err)
 	}
 
-	log.Println("learning body", string(b))
+	tokens, err := index.Parse(string(b))
+	if err != nil {
+		errHandler(w, 500, err)
+	}
+
+	m, err := json.Marshal(map[string]interface{}{
+		"total_tokens": len(tokens),
+	})
+	if err != nil {
+		errHandler(w, 500, err)
+	}
+
+	w.Write(m)
 
 }
 
 // generateHandler is a GET request handler that generates a string of random
 // text in the syntactic style of the trained ngrams.
 func generateHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("generating")
+	var err error
+
+	// Default length for the body to generate.
+	tokenLen := 50
+
+	if r.URL.Query().Get("limit") != "" {
+		tokenLen, err = strconv.Atoi(r.URL.Query().Get("limit"))
+		if err != nil {
+			errHandler(w, 500, err)
+		}
+	}
+
+	out, err := index.Babble("", tokenLen)
+	if err != nil {
+		if err == ngrams.ErrEmptyIndex {
+			m, err := json.Marshal(map[string]interface{}{
+				"err": "index is empty; please learn ngrams before generating.",
+			})
+			if err != nil {
+				errHandler(w, 400, err)
+			}
+
+			w.Write(m)
+			return
+		}
+
+		errHandler(w, 500, err)
+	}
+
+	m, err := json.Marshal(map[string]interface{}{
+		"body":  out,
+		"limit": tokenLen,
+	})
+	if err != nil {
+		errHandler(w, 500, err)
+	}
+
+	w.Write(m)
+
+}
+
+// errHandler is a convenience function which writes and logs errors.
+func errHandler(w http.ResponseWriter, code int, err error) {
+	log.Println("Error:", err)
+	http.Error(w, http.StatusText(code), code)
 }

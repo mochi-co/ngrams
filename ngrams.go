@@ -1,6 +1,7 @@
 package ngrams
 
 import (
+	"errors"
 	"strings"
 
 	stores "github.com/mochi-co/ngrams/stores"
@@ -11,6 +12,11 @@ const (
 
 	// defaultN is the default number of grams per record.
 	defaultN int = 3
+)
+
+var (
+	// ErrEmptyIndex indicates that the index has not yet learned any ngrams.
+	ErrEmptyIndex = errors.New("index is empty")
 )
 
 // Options contains parameters for the ngram indexer.
@@ -77,10 +83,10 @@ func (i *Index) Close() error {
 }
 
 // Parse parses a string into ngrams and adds them to the index.
-func (i *Index) Parse(str string) error {
+func (i *Index) Parse(str string) (tokens []string, err error) {
 
 	// Tokenize the string using whichever tokenizer was selected.
-	tokens := i.Tokenizer.Tokenize(str)
+	tokens = i.Tokenizer.Tokenize(str)
 
 	// Iterate through the tokens creating n-grams of n length.
 	for j := 0; j < len(tokens); j++ {
@@ -88,12 +94,13 @@ func (i *Index) Parse(str string) error {
 		if k == "" {
 			break
 		}
-		i.Store.Add(k, f)
+		err = i.Store.Add(k, f)
+		if err != nil {
+			return
+		}
 	}
 
-	//i.Store.(*stores.MemoryStore).Print()
-
-	return nil
+	return
 }
 
 // extractNgram extracts the maximum possible length ngram from a slice of
@@ -132,6 +139,18 @@ func (i *Index) extractNgram(j int, tokens []string) (key, future string) {
 
 }
 
+// Result contains the result of a ngram lookup.
+type Result struct {
+
+	// Prefix is the last token of the key that was matched. It is added
+	// to a key from the variations to make the next key, eg. Prefix+" "+VKey.
+	Prefix string
+
+	// Next contains the future variations of the ngram and the number of times
+	// they were indexed (probabilty score).
+	Next stores.Variations
+}
+
 // Seek returns potential ngrams from the store matching the seed string.
 func (i *Index) Seek(key string) (ok bool, result *Result) {
 	var v stores.Variations
@@ -161,20 +180,24 @@ func (i *Index) Seek(key string) (ok bool, result *Result) {
 func (i *Index) Babble(start string, n int) (b string, err error) {
 
 	// We need the start string as the first tokens in the selected output,
-	// otherwise they'll be skipped.
+	// otherwise they'll be skipped. If the string is blank, this will start
+	// with an empty slice and immediately seek any ngram.
 	o := i.Tokenizer.Tokenize(start)
 
 	// For however many tokens we want to use, we'll range through looking
 	// for matching ngram keys.
 	for j := 0; j < n; j++ {
 		ok, r := i.Seek(start)
-		if !ok {
-
-			// If nothing was found for the ngram, pick a new ngram at random.
+		if !ok { // If nothing was found for the ngram, pick a new ngram at random.
 			k, _, err := i.Store.Any()
 			if err != nil {
 				return "", err
 			}
+
+			if k == "" {
+				return "", ErrEmptyIndex
+			}
+
 			ok, r = i.Seek(k)
 		}
 
@@ -189,16 +212,4 @@ func (i *Index) Babble(start string, n int) (b string, err error) {
 	// Output the string using the token formatter for the in-use tokenizer.
 	b = i.Tokenizer.Format(o)
 	return
-}
-
-// Result contains the result of a ngram lookup.
-type Result struct {
-
-	// Prefix is the last token of the key that was matched. It is added
-	// to a key from the variations to make the next key, eg. Prefix+" "+VKey.
-	Prefix string
-
-	// Next contains the future variations of the ngram and the number of times
-	// they were indexed (probabilty score).
-	Next stores.Variations
 }

@@ -79,6 +79,7 @@ func NewDefaultWordTokenizer() *DefaultWord {
 			12303, // 』
 			12300, // 「
 			12301, // 」
+			42,    // *
 		},
 	}
 }

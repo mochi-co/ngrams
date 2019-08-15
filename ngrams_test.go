@@ -2,14 +2,13 @@ package ngrams
 
 import (
 	"io/ioutil"
-	"log"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
-	stores "github.com/mochi-co/trigrams-test/stores"
-	tk "github.com/mochi-co/trigrams-test/tokenizers"
+	stores "github.com/mochi-co/ngrams/stores"
+	tk "github.com/mochi-co/ngrams/tokenizers"
 )
 
 func TestNewIndex(t *testing.T) {
@@ -34,7 +33,11 @@ func TestNewIndex(t *testing.T) {
 
 func TestParse(t *testing.T) {
 	i := NewIndex(3, nil)
-	i.Parse("to be or not to be that is the question")
+	tokens, err := i.Parse("to be or not to be that is the question")
+	require.NoError(t, err)
+	require.Equal(t, 10, len(tokens))
+	require.Equal(t, "question", tokens[9])
+
 }
 
 func TestExtractNgram(t *testing.T) {
@@ -131,7 +134,7 @@ func TestBabble(t *testing.T) {
 	start, _, _ := i.Store.Any()
 	b, err := i.Babble(start, 200)
 	require.NoError(t, err)
-	log.Println("##", b)
+	require.NotEmpty(t, b)
 }
 
 func TestShortBabble(t *testing.T) {
@@ -148,5 +151,5 @@ func TestShortBabble(t *testing.T) {
 
 	b, err := i.Babble("be something", 200)
 	require.NoError(t, err)
-	log.Println("##", b)
+	require.NotEmpty(t, b)
 }

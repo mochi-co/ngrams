@@ -30,6 +30,8 @@ type Store interface {
 	// Any returns a random ngram from the store.
 	Any() (string, Variations, error)
 
+	// Len returns the number of tokens in the store.
+
 	// Close is used to gracefully shutdown any connections.
 	Close() error
 }
