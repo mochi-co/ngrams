@@ -51,7 +51,7 @@ func NewIndex(n int, o *Options) *Index {
 	i := &Index{
 		N:         n,
 		Store:     stores.NewMemoryStore(),
-		Tokenizer: tk.NewDefaultWordTokenizer(),
+		Tokenizer: tk.NewDefaultWordTokenizer(true),
 	}
 
 	// Ensure n is never 0.

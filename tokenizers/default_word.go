@@ -11,6 +11,11 @@ type DefaultWord struct {
 	// skippable is a slice of whitespace-like runes which can be skipped.
 	skippable []rune
 
+	// unskippable is a slice of characters which are not skippable, but should
+	// indicate the end of a token. This is used when line breaks are preserved
+	// in order to indicate that punctuation should be a stopper.
+	unskippable []rune
+
 	// stoppers is a slice of punctuation that indicate the end of a sentence.
 	stoppers []rune
 
@@ -25,12 +30,10 @@ type DefaultWord struct {
 }
 
 // NewDefaultWordTokenizer returns a new default word tokenizer.
-func NewDefaultWordTokenizer() *DefaultWord {
-	return &DefaultWord{
+func NewDefaultWordTokenizer(stripLinebreaks bool) *DefaultWord {
+	d := &DefaultWord{
 		skippable: []rune{
 			9,     // \t tab
-			10,    // \n newline
-			13,    // \r return
 			32,    // \s space
 			12288, // space (cjk)
 		},
@@ -82,6 +85,18 @@ func NewDefaultWordTokenizer() *DefaultWord {
 			42,    // *
 		},
 	}
+
+	if stripLinebreaks {
+		d.skippable = append(d.skippable, 10) // \n newline
+		d.skippable = append(d.skippable, 13) // \r return
+	} else {
+		d.punctuation = append(d.punctuation, 10) // \n newline
+		d.punctuation = append(d.punctuation, 13) // \r return
+		d.unskippable = append(d.unskippable, 10) // \n newline
+		d.unskippable = append(d.unskippable, 13) // \r return
+	}
+
+	return d
 }
 
 // Tokenize splits a string into tokens. Each instance of standard punctuation
@@ -131,7 +146,9 @@ func (tk *DefaultWord) Tokenize(str string) []string {
 		// is whitespace, otherwise it will be treated as part of the previous token.
 		// This allows us to preserve hyphenated words (eg. thirty-two, far-flung).
 		// We must also capture any trailing punctuation.
-		if runeInSlice(r[j], tk.punctuation) && (j+1 < len(r) && runeInSlice(r[j+1], tk.skippable) || j == len(r)-1) {
+		if runeInSlice(r[j], tk.punctuation) &&
+			(j+1 < len(r) && (runeInSlice(r[j+1], tk.skippable) || runeInSlice(r[j+1], tk.unskippable)) || j == len(r)-1) {
+
 			token := string(r[0])
 			if j > 0 {
 				token = string(r[start:j])

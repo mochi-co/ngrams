@@ -7,7 +7,7 @@ import (
 )
 
 func TestTokenize(t *testing.T) {
-	tk := NewDefaultWordTokenizer()
+	tk := NewDefaultWordTokenizer(true)
 
 	tokens := tk.Tokenize("to be or not to be.")
 	require.Equal(t, 7, len(tokens))
@@ -53,23 +53,24 @@ func TestTokenize(t *testing.T) {
 	require.Equal(t, 5, len(tokens))
 	require.Equal(t, []string{"said", "Jane", ".", "Darcy", "."}, tokens)
 
+	// Preserve line breaks
+	tk = NewDefaultWordTokenizer(false)
+	tokens = tk.Tokenize(`said Jane.
+	Darcy.`)
+	require.NotEmpty(t, tokens)
+	require.Equal(t, 6, len(tokens))
+	require.Equal(t, []string{"said", "Jane", ".", "\n", "Darcy", "."}, tokens)
+
 }
 
 func TestSanitize(t *testing.T) {
-	tk := NewDefaultWordTokenizer()
-
-	// In the "real world" you might do something a bit more comprehensive than this,
-	// maybe a test table (to allow for easier maintenance), but this is simple and serves a purpose.
+	tk := NewDefaultWordTokenizer(true)
 	str := "  («T[his 『is』 a “stri]n”g) \"int‘e{rsp*ersed wit}h „removable“ 「characters」.»  "
 	require.Equal(t, "This is a string interspersed with removable characters.", tk.sanitize(str))
-
 }
 
 func TestFormat(t *testing.T) {
-	tk := NewDefaultWordTokenizer()
-
+	tk := NewDefaultWordTokenizer(true)
 	tokens := []string{"i", "am", "sick", "of", "Mr", ".", "Bingley", ",", "cried", "his", "wife", ".", "he's", "like", "a", "character", "from", "a", "Jane", "Austen", "novel", "!"}
-
 	require.Equal(t, "I am sick of Mr. Bingley, cried his wife. He's like a character from a Jane Austen novel!", tk.Format(tokens))
-
 }
