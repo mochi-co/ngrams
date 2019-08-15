@@ -67,14 +67,14 @@ index = ngrams.NewIndex(3, ngrams.Options{
 })
 ```
 
-### Tokenizers
+### Tokenizers [![GoDoc](https://godoc.org/github.com/mochi-co/ngrams?status.svg)](https://godoc.org/github.com/mochi-co/ngrams/tokenizers)
 A tokenizer consists of a `Tokenize` method which is used to parse the input data into ngram tokens, and a `Format` method which pieces them back together in an expected format. The library uses the `tokenizers.DefaultWord` tokenizer by default, which is a simple tokenizer for parsing most latin-based languages (english, french, etc) into ngram tokens. 
 
 The `Format` method will perform a best effort attempt at piecing any selected ngram tokens back together in a grammatically correct manner (or whichever is appropriate for the type of tokenization being performed). 
 
 New tokenizers can be created by satisfying the `tokenizers.Tokenizer` interface, such as for the tokenization of CJK datasets or amino sequences.
 
-### Stores
+### Stores [![GoDoc](https://godoc.org/github.com/mochi-co/ngrams?status.svg)](https://godoc.org/github.com/mochi-co/ngrams/stores)
 By default, the index uses an in-memory store, `stores.MemoryStore`. This is a basic memory store which stores the ngrams as-is. It's great for small examples, but if you were indexing millions of tokens it would be good to think about compression or aliasing. 
 
 New stores can be created by satisfying the `stores.Store` interface.

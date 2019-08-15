@@ -1,3 +1,5 @@
+[![GoDoc](https://godoc.org/github.com/mochi-co/ngrams?status.svg)](https://godoc.org/github.com/mochi-co/ngrams/tokenizers)
+
 ### Tokenizers
 Tokenizers can be passed to the ngrams.NewIndex function to change the data tokenization mechanism. More details can be found in the [ngrams README](https://github.com/mochi-co/ngrams/blob/master/README.md).
 
