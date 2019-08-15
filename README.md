@@ -28,7 +28,12 @@ $ curl localhost:8080/generate
   		fugitives. Not so much wickedness existed in the only one daughter will be 
   		having a daughter married.",
   "limit": 50
- }
+}
+$ curl localhost:8080/generate?limit=10
+# {
+	"body": "Of its late possessor, she added, so untidy.",
+	"limit": 10
+}
 ```
 
 ## Basic Usage
