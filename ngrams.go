@@ -17,6 +17,10 @@ const (
 var (
 	// ErrEmptyIndex indicates that the index has not yet learned any ngrams.
 	ErrEmptyIndex = errors.New("index is empty")
+
+	// ErrNoResult indicates that no result could be returned. This shouldn't
+	// really happen outside of tests.
+	ErrNoResult = errors.New("no result found")
 )
 
 // Options contains parameters for the ngram indexer.
@@ -199,6 +203,10 @@ func (i *Index) Babble(start string, n int) (b string, err error) {
 			}
 
 			ok, r = i.Seek(k)
+		}
+
+		if r == nil {
+			return "", ErrNoResult
 		}
 
 		// Get the next ngram using a weighted random selection from the variations.

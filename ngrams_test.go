@@ -1,6 +1,7 @@
 package ngrams
 
 import (
+	"errors"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -10,6 +11,57 @@ import (
 	stores "github.com/mochi-co/ngrams/stores"
 	tk "github.com/mochi-co/ngrams/tokenizers"
 )
+
+type MockTokenizer struct {
+	tokens    []string
+	formatted string
+}
+
+func (m *MockTokenizer) Tokenize(str string) []string {
+	return m.tokens
+}
+func (m *MockTokenizer) Format(tokens []string) string {
+	return m.formatted
+}
+
+type MockStore struct {
+	errAdd   bool
+	errClose bool
+	errGet   bool
+	errAny   bool
+}
+
+func (m *MockStore) Add(key, future string) error {
+	if m.errAdd {
+		return errors.New("test")
+	}
+	return nil
+}
+
+func (m *MockStore) Get(key string) (bool, stores.Variations) {
+	if m.errGet {
+		return false, stores.Variations{}
+	}
+	return true, stores.Variations{"test": 100}
+}
+
+func (m *MockStore) Delete(key string) error {
+	return nil
+}
+
+func (m *MockStore) Any() (string, stores.Variations, error) {
+	if m.errAny {
+		return "", stores.Variations{}, errors.New("test")
+	}
+	return "", stores.Variations{}, nil
+}
+
+func (m *MockStore) Close() error {
+	if m.errClose {
+		return errors.New("test")
+	}
+	return nil
+}
 
 func TestNewIndex(t *testing.T) {
 
@@ -24,11 +76,20 @@ func TestNewIndex(t *testing.T) {
 	i = NewIndex(2, nil)
 	require.Equal(t, i.N, 2)
 
-	// Custom Tokenizer
-	// ...
+	// Custom Tokenizer and Store
+	i = NewIndex(0, &Options{
+		Tokenizer: &MockTokenizer{
+			formatted: "test",
+		},
+		Store: new(MockStore),
+	})
+	require.NotNil(t, i)
+	require.Equal(t, "test", i.Tokenizer.Format([]string{}))
 
-	// Custom Store
-	// ...
+	ok, v := i.Store.Get("any")
+	require.Equal(t, true, ok)
+	require.NotNil(t, v["test"])
+	require.Equal(t, int64(100), v["test"])
 }
 
 func TestParse(t *testing.T) {
@@ -38,6 +99,28 @@ func TestParse(t *testing.T) {
 	require.Equal(t, 10, len(tokens))
 	require.Equal(t, "question", tokens[9])
 
+	i = NewIndex(3, &Options{
+		Store: &MockStore{
+			errAdd: true,
+		},
+	})
+	tokens, err = i.Parse("to be or not to be that is the question")
+	require.Error(t, err)
+
+}
+
+func TestClose(t *testing.T) {
+	i := NewIndex(3, nil)
+	err := i.Close()
+	require.NoError(t, err)
+
+	i = NewIndex(3, &Options{
+		Store: &MockStore{
+			errClose: true,
+		},
+	})
+	err = i.Close()
+	require.Error(t, err)
 }
 
 func TestExtractNgram(t *testing.T) {
@@ -115,6 +198,15 @@ func TestSeek(t *testing.T) {
 	require.Equal(t, true, ok)
 	require.Equal(t, "or", result.Prefix)
 	require.Equal(t, stores.Variations{"not": 1}, result.Next)
+
+	i = NewIndex(3, &Options{
+		Store:     new(MockStore),
+		Tokenizer: new(MockTokenizer),
+	})
+	ok, result = i.Seek("to be or")
+	require.Equal(t, true, ok)
+	require.Nil(t, result)
+
 }
 
 func TestBabble(t *testing.T) {
@@ -147,9 +239,32 @@ func TestShortBabble(t *testing.T) {
 	//	i.Parse("To think it more than commonly anxious to get round to the preference of one, and offended by the other as politely and more cheerfully.")
 	//	i.Parse("Their visit afforded was produced by the lady with whom she almost looked up to the stables. They were to set out with such a woman.")
 
-	//i.Store.(*stores.MemoryStore).Print()
-
 	b, err := i.Babble("be something", 200)
 	require.NoError(t, err)
 	require.NotEmpty(t, b)
+
+	i = NewIndex(3, &Options{
+		Store: &MockStore{
+			errGet: true,
+			errAny: true,
+		},
+	})
+	_, err = i.Babble("", 10)
+	require.Error(t, err)
+
+	i = NewIndex(3, &Options{
+		Store: &MockStore{
+			errGet: true,
+		},
+	})
+	_, err = i.Babble("", 10)
+	require.Error(t, err)
+	require.Equal(t, ErrEmptyIndex, err)
+
+	i = NewIndex(3, &Options{
+		Store: &MockStore{},
+	})
+	_, err = i.Babble("", 10)
+	require.Error(t, err)
+	require.Equal(t, ErrNoResult, err)
 }
