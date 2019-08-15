@@ -51,7 +51,7 @@ out, err := index.Babble("to be", 50)
 ```
 
 ### Custom Index Initialization
-Both the data storage and tokenization mechanisms for the indexer can be replaced by satisfying the store and tokenizer interfaces, allowing the indexer to be adjusted for different purposes.
+Both the data storage and tokenization mechanisms for the indexer can be replaced by satisfying the store and tokenizer interfaces, allowing the indexer to be adjusted for different purposes. The index supports bigrams, trigrams, quadgrams, etc, by way of changing the NewIndex `n` (3) value.
 
 ```go
 // Initialize with custom tokenizers and memory stores.
