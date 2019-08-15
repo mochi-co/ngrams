@@ -102,7 +102,7 @@ func learnHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	m, err := json.Marshal(map[string]interface{}{
-		"total_tokens": len(tokens),
+		"parsed_tokens": len(tokens),
 	})
 	if err != nil {
 		errHandler(w, 500, err)
@@ -127,7 +127,7 @@ func generateHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	out, err := index.Babble("", tokenLen)
+	out, err := index.Babble("", tokenLen) // Starting seed is left blank for random choice.
 	if err != nil {
 		if err == ngrams.ErrEmptyIndex {
 			m, err := json.Marshal(map[string]interface{}{
