@@ -41,7 +41,7 @@ func (s *MemoryStore) Add(key, future string) error {
 	if _, ok := s.internal[key][future]; !ok {
 		s.internal[key][future] = 0
 	}
-	s.internal[key][future] += 1
+	s.internal[key][future]++
 
 	return nil
 }

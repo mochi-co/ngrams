@@ -22,7 +22,7 @@ func TestVariationsNextWeightedRand(t *testing.T) {
 	for i := 0; i < 10000; i++ {
 		next := v.NextWeightedRand()
 		require.NotEmpty(t, next)
-		results[next] += 1
+		results[next]++
 	}
 
 	// Fuzzy distribution check. Tolerance +/- 4%

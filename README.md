@@ -1,6 +1,7 @@
 [![Build Status](https://travis-ci.com/mochi-co/ngrams.svg?token=59nqixhtefy2iQRwsPcu&branch=master)](https://travis-ci.com/mochi-co/ngrams)
 [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/mochi-co/ngrams/issues)
 [![codecov](https://codecov.io/gh/mochi-co/ngrams/branch/master/graph/badge.svg?token=6vBUgYVaVB)](https://codecov.io/gh/mochi-co/ngrams)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/52ee14bd3a924979a26eb7da11d22a8f)](https://www.codacy.com/app/mochi-co/ngrams?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=mochi-co/ngrams&amp;utm_campaign=Badge_Grade)
 [![GoDoc](https://godoc.org/github.com/mochi-co/ngrams?status.svg)](https://godoc.org/github.com/mochi-co/ngrams)
 
 ## What is Ngrams?
