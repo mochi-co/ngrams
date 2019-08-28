@@ -27,7 +27,7 @@ var (
 
 // main is our entrypoint for the service.
 func main() {
-	log.Println("Starting trigram service...")
+	log.Println("Starting REST trigram service...")
 
 	// Prepare signal catching to ensure the webserver and indexer
 	// shuts down cleanly.

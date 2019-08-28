@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package v1;
+
+message LearnRequest{
+
+    // body is the body of data being learned.
+    string body = 1;
+
+}
+
+message LearnResponse{
+
+    // parsed_tokens is the number of tokens parsed in the training.
+    int64 parsed_tokens = 1;
+
+}
+
+message GenerateRequest{
+
+    // limit is the target length of the output in tokens.
+    int64 limit = 1;
+
+}
+
+message GenerateResponse{
+	
+	// body is the output that was generated.
+	string body = 1;
+
+    // limit is the target length of tokens that was used (==GenerateRequest.tokens)
+    int64 limit = 2;
+
+}
+
+
+service NgramService {
+
+    // Learn trains the ngram index on a corpus of text.
+    rpc Learn(LearnRequest) returns (LearnResponse);
+
+    // Generate outputs a random string in the trained style.
+    rpc Generate(GenerateRequest) returns (GenerateResponse);
+ 
+}
+
