@@ -122,7 +122,7 @@ func (tk *DefaultWord) Tokenize(str string) []string {
 
 	for ; j < len(r); j++ {
 
-		// If the rune is skippable, note that we're not tracking skippable
+		// If the rune is skippable, note that we're now tracking skippable
 		// runes, add any previous token to the slice, and continue.
 		if runeInSlice(r[j], tk.skippable) {
 			if !skipping {
