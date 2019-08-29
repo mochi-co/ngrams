@@ -62,11 +62,16 @@ func TestTokenize(t *testing.T) {
 	require.NotEmpty(t, tokens)
 	require.Equal(t, []string{"said", "Jane", ".", "\n", "Darcy", "?"}, tokens)
 
-	// Test sanitizing
 	tk = NewDefaultWordTokenizer(false)
-	tokens = tk.Tokenize(`  («T[his 『is』 a “stri]n”g) "int‘e{rsp*ersed wit}h „removable“ 「characters」.»  `)
-	require.NotEmpty(t, tokens)
+	tokens = tk.Tokenize("(«T[his 『is』 a “stri]n”g) \"int‘e{rsp*ersed wit}h „removable“ 「characters」.»")
 	require.Equal(t, []string{"This", "is", "a", "string", "interspersed", "with", "removable", "characters", "."}, tokens)
+
+}
+
+func TestSanitize(t *testing.T) {
+	tk := NewDefaultWordTokenizer(true)
+	b := []byte("(«T[his 『is』 a “stri]n”g) \"int‘e{rsp*ersed wit}h „removable“ 「characters」.»")
+	require.Equal(t, "This is a string interspersed with removable characters.", string(tk.sanitize(b)))
 }
 
 func TestFormat(t *testing.T) {

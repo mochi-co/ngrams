@@ -2,6 +2,8 @@ package tokenizers
 
 import (
 	"bufio"
+	"bytes"
+	//"log"
 	"strings"
 	"unicode/utf8"
 )
@@ -115,7 +117,7 @@ func (tk *DefaultWord) Tokenize(str string) []string {
 
 	// Sanitize the input string.
 	//str = strings.ToLower(str)
-	str = tk.sanitize(str)
+	//str = tk.sanitize(str)
 
 	// Parse the string into the reader so it can be scanned using the tokenizer's
 	// own scanner.
@@ -153,14 +155,9 @@ func (tk *DefaultWord) Scanner(data []byte, atEOF bool) (advance int, token []by
 		var r rune
 		r, width = utf8.DecodeRune(data[i:])
 
-		// If the rune is an invalid character, just move on to the next one.
-		if runeInSlice(r, tk.invalidChars) {
-			continue
-		}
-
 		// If the rune is a space or skippable character, return everything so far.
 		if runeInSlice(r, tk.skippable) {
-			return i + width, data[start:i], nil
+			return i + width, tk.sanitize(data[start:i]), nil
 		}
 
 		// If the rune is punctuation and there's other runes since the start,
@@ -171,8 +168,8 @@ func (tk *DefaultWord) Scanner(data []byte, atEOF bool) (advance int, token []by
 				// If the next rune is skippable, this is trailing punctuation
 				// and can be split.
 				nr, nw := utf8.DecodeRune(data[i+width:]) // Get next rune
-				if (runeInSlice(nr, tk.skippable) || runeInSlice(nr, tk.unskippable)) || nw == 0 {
-					return i, data[start:i], nil
+				if (runeInSlice(nr, tk.skippable) || runeInSlice(nr, tk.invalidChars) || runeInSlice(nr, tk.unskippable)) || nw == 0 {
+					return i, tk.sanitize(data[start:i]), nil
 				}
 			}
 		}
@@ -180,7 +177,7 @@ func (tk *DefaultWord) Scanner(data []byte, atEOF bool) (advance int, token []by
 
 	// If at EOF, return whatever is left.
 	if atEOF && len(data) > start {
-		return len(data), data[start:], nil
+		return len(data), tk.sanitize(data[start:]), nil
 	}
 
 	// Return for next data.
@@ -188,14 +185,16 @@ func (tk *DefaultWord) Scanner(data []byte, atEOF bool) (advance int, token []by
 
 }
 
-// sanitize removes all unsupported characters from a string.
-func (tk *DefaultWord) sanitize(str string) string {
-	return strings.Map(func(c rune) rune {
-		if runeInSlice(c, tk.invalidChars) {
-			return -1
+// sanitize will remove any invalid characters from a byte string.
+func (tk *DefaultWord) sanitize(data []byte) []byte {
+	rs := bytes.Runes(data)
+	buf := make([]byte, 0, len(data))
+	for _, r := range rs {
+		if !runeInSlice(r, tk.invalidChars) {
+			buf = append(buf, []byte(string(r))...)
 		}
-		return c
-	}, strings.TrimSpace(str))
+	}
+	return buf
 }
 
 // Format joins a slice of tokens by the tokenizer rules.
