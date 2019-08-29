@@ -184,7 +184,7 @@ func (i *Index) extractNgram(j int, tokens []string) (key, future string) {
 }
 
 // extractAndStore is a convenience method which extracts ngrams from a slice
-// of toens, then stores them in the index.
+// of tokens, then stores them in the index.
 func (i *Index) extractAndStore(j int, tokens []string) error {
 
 	k, f := i.extractNgram(j, tokens)
