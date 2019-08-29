@@ -6,6 +6,9 @@ type Tokenizer interface {
 	// Tokenize tokenizes a string.
 	Tokenize(string) []string
 
+	// Scanner tokenizes a byte array and can be used by bufio.Scanner.
+	Scanner(data []byte, atEOF bool) (advance int, token []byte, err error)
+
 	// Format joins a slice of tokens by the tokenizer rules.
 	Format([]string) string
 }

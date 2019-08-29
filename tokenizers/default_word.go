@@ -1,7 +1,9 @@
 package tokenizers
 
 import (
+	"bufio"
 	"strings"
+	"unicode/utf8"
 )
 
 // DefaultWord is the default tokenizer, designed to be used with
@@ -37,31 +39,8 @@ func NewDefaultWordTokenizer(stripLinebreaks bool) *DefaultWord {
 			32,    // \s space
 			12288, // space (cjk)
 		},
-		stoppers: []rune{
-			46,    // .
-			63,    // ?
-			33,    // !
-			8253,  // ‽
-			12290, // 。 (cjk)
-			65311, // ？ (cjk)
-			65281, // ！ (cjk)
-		},
-		punctuation: []rune{
-			46,    // .
-			44,    // ,
-			63,    // ?
-			33,    // !
-			8253,  // ‽
-			58,    // :
-			59,    // ;
-			38,    // &
-			12290, // 。 (cjk)
-			12289, // 、 (cjk)
-			65281, // ！ (cjk)
-			65311, // ？ (cjk)
-			65306, // ： (cjk)
-			65307, // ； (cjk)
-		},
+
+		// Invalid characters which should be ignored.
 		invalidChars: []rune{
 			40,   // (
 			41,   // )
@@ -84,12 +63,43 @@ func NewDefaultWordTokenizer(stripLinebreaks bool) *DefaultWord {
 			12301, // 」
 			42,    // *
 		},
+
+		// stoppers are characters which indicate the end of a sentence (for formatting).
+		stoppers: []rune{
+			46,    // .
+			63,    // ?
+			33,    // !
+			8253,  // ‽
+			12290, // 。 (cjk)
+			65311, // ？ (cjk)
+			65281, // ！ (cjk)
+		},
+
+		punctuation: []rune{
+			46,    // .
+			44,    // ,
+			63,    // ?
+			33,    // !
+			8253,  // ‽
+			58,    // :
+			59,    // ;
+			38,    // &
+			12290, // 。 (cjk)
+			12289, // 、 (cjk)
+			65281, // ！ (cjk)
+			65311, // ？ (cjk)
+			65306, // ： (cjk)
+			65307, // ； (cjk)
+		},
 	}
 
 	if stripLinebreaks {
 		d.skippable = append(d.skippable, 10) // \n newline
 		d.skippable = append(d.skippable, 13) // \r return
 	} else {
+
+		// If we keep line breaks, we have to treat them as punctuation and
+		// ensure they are not skippable in the punctation splitter.
 		d.punctuation = append(d.punctuation, 10) // \n newline
 		d.punctuation = append(d.punctuation, 13) // \r return
 		d.unskippable = append(d.unskippable, 10) // \n newline
@@ -107,66 +117,75 @@ func (tk *DefaultWord) Tokenize(str string) []string {
 	//str = strings.ToLower(str)
 	str = tk.sanitize(str)
 
-	r := []rune(str)
-	tokens := make([]string, 0, len(str))
+	// Parse the string into the reader so it can be scanned using the tokenizer's
+	// own scanner.
+	scanner := bufio.NewScanner(strings.NewReader(str))
+	scanner.Split(tk.Scanner)
 
-	// If we were only taking words, we could use strings.FieldsFunc to extract
-	// everything between the spaces. However, in order to preserve the expected
-	// grammar of the sentences, we need to also extract the punctation as discrete
-	// tokens. The easiest way to do this is range through the string as runes,
-	// extracting tokens as we go.
-
-	var start int     // start indicates the starting index of a new token.
-	var j int         // j is the index, and it's up a scope so we can append the final word.
-	var skipping bool // skipping indicates that we're scanning over skippable runes.
-
-	for ; j < len(r); j++ {
-
-		// If the rune is skippable, note that we're now tracking skippable
-		// runes, add any previous token to the slice, and continue.
-		if runeInSlice(r[j], tk.skippable) {
-			if !skipping {
-				tokens = append(tokens, string(r[start:j]))
-				skipping = true
-			}
-
-			start = j + 1 // bring the start forward.
-			continue
-		}
-
-		// If we're still going it means the current rune is not skippable. If
-		// we were previously tracking skippables, that means we've now started a new token.
-		if skipping {
-			skipping = false
-			start = j
-		}
-
-		// If the rune is a punctation mark, add it to the tokens and immediately
-		// set a new start position. Punctuation is only valid if the next character
-		// is whitespace, otherwise it will be treated as part of the previous token.
-		// This allows us to preserve hyphenated words (eg. thirty-two, far-flung).
-		// We must also capture any trailing punctuation.
-		if runeInSlice(r[j], tk.punctuation) &&
-			(j+1 < len(r) && (runeInSlice(r[j+1], tk.skippable) || runeInSlice(r[j+1], tk.unskippable)) || j == len(r)-1) {
-
-			token := string(r[0])
-			if j > 0 {
-				token = string(r[start:j])
-				tokens = append(tokens, token)
-				start = j
-			}
-		}
-	}
-
-	// If there are more characters left since the last split, take whatever is
-	// left and create the last token.
-	if j > start {
-		if token := strings.TrimSpace(string(r[start:])); token != "" {
-			tokens = append(tokens, token)
-		}
+	tokens := []string{}
+	for scanner.Scan() {
+		tokens = append(tokens, scanner.Text())
 	}
 
 	return tokens
+
+}
+
+// Scanner is the core tokenizer which splits a slice of bytes into tokens. It can be
+// used with bufio.scanner to tokenizer a stream of data.
+func (tk *DefaultWord) Scanner(data []byte, atEOF bool) (advance int, token []byte, err error) {
+
+	// Skip leading skippable characters.
+	var start int
+	for width := 0; start < len(data); start += width {
+		var r rune
+		r, width = utf8.DecodeRune(data[start:])
+		if !runeInSlice(r, tk.skippable) {
+			break
+		}
+	}
+
+	// Found a non-skippable, so continue searching for token end.
+	// i is the byte index, width is rune width in bytes, start is byte start pos.
+	for width, i := 0, start; i < len(data); i += width {
+
+		// Get the first rune in the advanced slice...
+		var r rune
+		r, width = utf8.DecodeRune(data[i:])
+
+		// If the rune is an invalid character, just move on to the next one.
+		if runeInSlice(r, tk.invalidChars) {
+			continue
+		}
+
+		// If the rune is a space or skippable character, return everything so far.
+		if runeInSlice(r, tk.skippable) {
+			return i + width, data[start:i], nil
+		}
+
+		// If the rune is punctuation and there's other runes since the start,
+		// return everything up to now, but make sure to start on this rune next time.
+		if runeInSlice(r, tk.punctuation) {
+			if i+width-utf8.RuneLen(r) > 0 {
+
+				// If the next rune is skippable, this is trailing punctuation
+				// and can be split.
+				nr, nw := utf8.DecodeRune(data[i+width:]) // Get next rune
+				if (runeInSlice(nr, tk.skippable) || runeInSlice(nr, tk.unskippable)) || nw == 0 {
+					return i, data[start:i], nil
+				}
+			}
+		}
+	}
+
+	// If at EOF, return whatever is left.
+	if atEOF && len(data) > start {
+		return len(data), data[start:], nil
+	}
+
+	// Return for next data.
+	return start, nil, nil
+
 }
 
 // sanitize removes all unsupported characters from a string.

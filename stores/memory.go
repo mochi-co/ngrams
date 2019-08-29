@@ -24,8 +24,8 @@ type MemoryStore struct {
 
 // Add adds an ngram to the store.
 func (s *MemoryStore) Add(key, future string) error {
-	s.RLock()
-	defer s.RUnlock()
+	s.Lock()
+	defer s.Unlock()
 
 	// If this particular key doesn't exist at all, we can add it with
 	// the provided future, and a starting quantity of 1.
@@ -48,8 +48,8 @@ func (s *MemoryStore) Add(key, future string) error {
 
 // Get gets an ngram variation from the store.
 func (s *MemoryStore) Get(key string) (ok bool, v Variations) {
-	s.Lock()
-	defer s.Unlock()
+	s.RLock()
+	defer s.RUnlock()
 
 	v, ok = s.internal[key]
 

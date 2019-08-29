@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -20,11 +21,17 @@ type MockTokenizer struct {
 func (m *MockTokenizer) Tokenize(str string) []string {
 	return m.tokens
 }
+
+func (m *MockTokenizer) Scanner(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	return
+}
+
 func (m *MockTokenizer) Format(tokens []string) string {
 	return m.formatted
 }
 
 type MockStore struct {
+	added    []string
 	errAdd   bool
 	errClose bool
 	errGet   bool
@@ -35,6 +42,9 @@ func (m *MockStore) Add(key, future string) error {
 	if m.errAdd {
 		return errors.New("test")
 	}
+
+	m.added = append(m.added, key+" "+future)
+
 	return nil
 }
 
@@ -109,6 +119,51 @@ func TestParse(t *testing.T) {
 
 }
 
+func TestRead(t *testing.T) {
+	i := NewIndex(3, &Options{
+		Store: new(MockStore),
+	})
+
+	text := "to be or not to be that is the question"
+	r := strings.NewReader(text)
+	err := i.Read(r)
+	require.NoError(t, err)
+	ex := []string{
+		"to be or",
+		"be or not",
+		"or not to",
+		"not to be",
+		"to be that",
+		"be that is",
+		"that is the",
+		"is the question",
+	}
+	require.Equal(t, ex, i.Store.(*MockStore).added)
+
+	i.Store = new(MockStore)
+
+	t2 := "to be, or not to be, is that the question?"
+	r = strings.NewReader(t2)
+	err = i.Read(r)
+	require.NoError(t, err)
+	ex2 := []string{
+		"to be ,",
+		"be , or",
+		", or not",
+		"or not to",
+		"not to be",
+		"to be ,",
+		"be , is",
+		", is that",
+		"is that the",
+		"that the question",
+		"the question ?",
+	}
+
+	require.Equal(t, ex2, i.Store.(*MockStore).added)
+
+}
+
 func TestClose(t *testing.T) {
 	i := NewIndex(3, nil)
 	err := i.Close()
@@ -166,6 +221,34 @@ func TestExtractNgram(t *testing.T) {
 	key, future = i.extractNgram(0, tokens)
 	require.Equal(t, "to", key)
 	require.Equal(t, "to", future) // I don't know why you'd use this for monograms but here we are.
+
+}
+
+func TestExtractAndStore(t *testing.T) {
+	tokens := []string{"to", "be", ",", "or", "not", "to", "be", ",", "is", "that", "the", "question", "?"}
+
+	i := NewIndex(3, &Options{
+		Store: new(MockStore),
+	})
+	for j := 0; j < len(tokens); j++ {
+		err := i.extractAndStore(j, tokens)
+		require.NoError(t, err)
+	}
+
+	ex2 := []string{
+		"to be ,",
+		"be , or",
+		", or not",
+		"or not to",
+		"not to be",
+		"to be ,",
+		"be , is",
+		", is that",
+		"is that the",
+		"that the question",
+		"the question ?",
+	}
+	require.Equal(t, ex2, i.Store.(*MockStore).added)
 
 }
 

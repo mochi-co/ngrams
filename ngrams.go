@@ -1,7 +1,9 @@
 package ngrams
 
 import (
+	"bufio"
 	"errors"
+	"io"
 	"strings"
 
 	stores "github.com/mochi-co/ngrams/stores"
@@ -86,6 +88,48 @@ func (i *Index) Close() error {
 	return nil
 }
 
+// Read reads from an io.Reader and adds extracted tokens to the store.
+func (i *Index) Read(r io.Reader) (err error) {
+
+	// Use the tokenizer scanner to split the read data.
+	scanner := bufio.NewScanner(r)
+	scanner.Split(i.Tokenizer.Scanner)
+
+	// Hold only N tokens at a time.
+	tokens := make([]string, 0, i.N)
+
+	// We need to scan through the first N tokens to ensure there's enough
+	// grams to index (eg trigrams, must have 3 ngrams).
+	for scanner.Scan() {
+		tokens = append(tokens, scanner.Text())
+
+		// If we've got enough n-grams, we can start indexing them.
+		if len(tokens) == i.N {
+			err = i.extractAndStore(0, tokens)
+			if err != nil {
+				return
+			}
+
+			break
+		}
+	}
+
+	for scanner.Scan() {
+		tokens = append(tokens[1:], scanner.Text())
+		err = i.extractAndStore(0, tokens)
+		if err != nil {
+			return
+		}
+	}
+
+	err = scanner.Err()
+	if err != nil {
+		return
+	}
+
+	return
+}
+
 // Parse parses a string into ngrams and adds them to the index.
 func (i *Index) Parse(str string) (tokens []string, err error) {
 
@@ -94,11 +138,7 @@ func (i *Index) Parse(str string) (tokens []string, err error) {
 
 	// Iterate through the tokens creating n-grams of n length.
 	for j := 0; j < len(tokens); j++ {
-		k, f := i.extractNgram(j, tokens)
-		if k == "" {
-			break
-		}
-		err = i.Store.Add(k, f)
+		err = i.extractAndStore(j, tokens)
 		if err != nil {
 			return
 		}
@@ -118,7 +158,7 @@ func (i *Index) extractNgram(j int, tokens []string) (key, future string) {
 
 	// An n-gram must have exactly as many tokens as (n), otherwise it would be
 	// called a sort-of-n-but-actually-sometimes-not-gram.
-	if j+n > len(tokens) {
+	if j+n >= len(tokens) {
 		return
 	}
 
@@ -141,6 +181,23 @@ func (i *Index) extractNgram(j int, tokens []string) (key, future string) {
 
 	return
 
+}
+
+// extractAndStore is a convenience method which extracts ngrams from a slice
+// of toens, then stores them in the index.
+func (i *Index) extractAndStore(j int, tokens []string) error {
+
+	k, f := i.extractNgram(j, tokens)
+	if k == "" {
+		return nil
+	}
+
+	err := i.Store.Add(k, f)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Result contains the result of a ngram lookup.
