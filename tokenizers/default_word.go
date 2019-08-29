@@ -181,7 +181,7 @@ func (tk *DefaultWord) Scanner(data []byte, atEOF bool) (advance int, token []by
 
 }
 
-// sanitize will remove any invalid characters from a byte string.
+// sanitize will remove any invalid characters from a byte slice.
 func (tk *DefaultWord) sanitize(data []byte) []byte {
 	rs := bytes.Runes(data)
 	buf := make([]byte, 0, len(data))
