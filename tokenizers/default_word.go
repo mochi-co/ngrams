@@ -115,10 +115,6 @@ func NewDefaultWordTokenizer(stripLinebreaks bool) *DefaultWord {
 // is also considered to be token in order to preserve expected grammar.
 func (tk *DefaultWord) Tokenize(str string) []string {
 
-	// Sanitize the input string.
-	//str = strings.ToLower(str)
-	//str = tk.sanitize(str)
-
 	// Parse the string into the reader so it can be scanned using the tokenizer's
 	// own scanner.
 	scanner := bufio.NewScanner(strings.NewReader(str))
